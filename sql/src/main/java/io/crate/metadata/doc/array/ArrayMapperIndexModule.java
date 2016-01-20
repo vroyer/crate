@@ -22,7 +22,6 @@
 package io.crate.metadata.doc.array;
 
 import org.elasticsearch.common.inject.AbstractModule;
-import org.elasticsearch.index.mapper.core.ArrayMapper;
 
 public class ArrayMapperIndexModule extends AbstractModule {
 
