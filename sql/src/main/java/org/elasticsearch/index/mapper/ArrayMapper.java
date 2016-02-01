@@ -24,21 +24,17 @@ package org.elasticsearch.index.mapper;
 
 import org.apache.lucene.document.Field;
 import org.elasticsearch.ElasticsearchParseException;
-import org.elasticsearch.Version;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.common.xcontent.XContentParser;
-// TODO: FIX ME! Assess need for DynamicArrayMappers
-/* import org.elasticsearch.index.mapper.object.DynamicArrayFieldMapperBuilderFactory;
-import org.elasticsearch.index.mapper.object.DynamicArrayFieldMapperException;
-import org.elasticsearch.index.mapper.object.DynamicValueMapperLookup; */
-import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
-import org.elasticsearch.index.mapper.internal.UidFieldMapper;
-import org.elasticsearch.index.mapper.object.*;
+import org.elasticsearch.index.mapper.array.DynamicArrayFieldMapperBuilderFactory;
+import org.elasticsearch.index.mapper.object.ArrayValueMapperParser;
+import org.elasticsearch.index.mapper.object.DynamicValueMapperLookup;
+import org.elasticsearch.index.mapper.object.ObjectMapper;
+import org.elasticsearch.index.mapper.object.ObjectMapperProxy;
 
-import javax.print.Doc;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -100,8 +96,24 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
         }
 
         public Mapper parse(ObjectMapper mapper, ParseContext ctx) throws IOException {
+            return DocumentParser.parseObject(ctx, mapper, true);
+        }
+    }
+
+    /**
+     * used to parse single object values from arrays
+     * the current field name must be set when traversing the inner objectMapper
+     */
+    private class InnerObjectParser extends InnerParser {
+
+        private InnerObjectParser(String fieldName) {
+            super(fieldName);
+        }
+
+        @Override
+        public Mapper parse(ObjectMapper mapper, ParseContext ctx) throws IOException {
             ctx.path().add(fieldName);
-            Mapper update = DocumentParser.parseObject(ctx, mapper, true);
+            Mapper update = super.parse(mapper, ctx);
             ctx.path().remove();
             return update;
         }
@@ -110,6 +122,12 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
     public static class Builder extends FieldMapper.Builder<Builder, ArrayMapper> {
 
         private Mapper.Builder innerMapperBuilder;
+
+         public static class BuilderFactory implements DynamicArrayFieldMapperBuilderFactory {
+             public Builder create(String name){
+                 return new Builder(name);
+             }
+         }
 
         public Builder(String name) {
             super(name, new ArrayFieldType());
@@ -232,6 +250,7 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
             throw new ElasticsearchParseException("invalid array");
         }
         token = parser.nextToken();
+        Boolean updatedMapping = false;
         if (innerMapper == null) {
             // this is the case for new dynamic arrays
 
@@ -254,9 +273,9 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
             }
             innerMapper = mapper;
             setInnerParser();
+            updatedMapping = true;
         }
 
-        Boolean updatedMapping = false;
         while (token != XContentParser.Token.END_ARRAY) {
             Mapper update = null;
 
@@ -279,7 +298,11 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
     }
 
     private void setInnerParser() {
-        this.innerParser = new InnerParser(name);
+        if (innerParser != null && innerMapper instanceof ObjectMapper) {
+            this.innerParser = new InnerObjectParser(this.name);
+        } else {
+            this.innerParser = new InnerParser(name);
+        }
     }
 
     private void parseNull(ParseContext context) throws IOException {
@@ -287,25 +310,6 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
         innerParser.parse((FieldMapper)innerMapper, context);
     }
 
-    /*@Override
-    public void merge(Mapper mergeWith, MergeContext mergeContext) throws MergeMappingException {
-        innerMapper.merge(mergeWith, mergeContext);
-    }
-
-    @Override
-    public void traverse(FieldMapperListener fieldMapperListener) {
-        innerMapper.traverse(fieldMapperListener);
-    }
-
-    @Override
-    public void traverse(ObjectMapperListener objectMapperListener) {
-        innerMapper.traverse(objectMapperListener);
-    }
-
-    @Override
-    public void close() {
-        innerMapper.close();
-    }*/
 
     protected String contentType() {
         return CONTENT_TYPE;
@@ -325,7 +329,6 @@ public class ArrayMapper extends FieldMapper implements ArrayValueMapperParser {
             objectMapperProxy.toXContent(builder, params, null);
         }
 
-        //builder.endObject();
         return builder.endObject();
     }
 

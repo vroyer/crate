@@ -36,7 +36,6 @@ import io.crate.lucene.CrateIndexModule;
 import io.crate.metadata.MetaDataModule;
 import io.crate.metadata.blob.MetaDataBlobModule;
 import io.crate.metadata.doc.MetaDataDocModule;
-import io.crate.metadata.doc.array.ArrayMapperIndexModule;
 import io.crate.metadata.information.MetaDataInformationModule;
 import io.crate.metadata.settings.CrateSettings;
 import io.crate.metadata.settings.Setting;
@@ -64,6 +63,8 @@ import org.elasticsearch.cluster.settings.Validator;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.mapper.ArrayMapper;
+import org.elasticsearch.indices.IndicesModule;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 
@@ -141,7 +142,6 @@ public class SQLPlugin extends Plugin {
     public Collection<Module> indexModules(Settings indexSettings) {
         Collection<Module> modules = newArrayList();
         if (!settings.getAsBoolean("node.client", false)) {
-            modules.add(new ArrayMapperIndexModule());
             modules.add(new CrateIndexModule());
         }
         return modules;
@@ -157,6 +157,10 @@ public class SQLPlugin extends Plugin {
             modules.add(new CollectShardModule());
         }
         return modules;
+    }
+
+    public void onModule(IndicesModule indicesModule) {
+        indicesModule.registerMapper(ArrayMapper.CONTENT_TYPE, new ArrayMapper.TypeParser());
     }
 
     public void onModule(RestModule restModule) {

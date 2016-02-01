@@ -22,6 +22,7 @@
 package io.crate.metadata.doc.array;
 
 import com.google.common.base.Joiner;
+import io.crate.plugin.CrateCorePlugin;
 import io.crate.test.integration.CrateSingleNodeTest;
 import io.crate.testing.TestingHelpers;
 import org.elasticsearch.ElasticsearchParseException;
@@ -44,12 +45,14 @@ import org.elasticsearch.indices.mapper.MapperRegistry;
 import org.elasticsearch.index.mapper.ArrayMapper;
 import org.elasticsearch.index.mapper.object.ObjectMapper;
 import org.elasticsearch.indices.IndicesService;
+import org.elasticsearch.plugins.Plugin;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import static org.hamcrest.Matchers.*;
 
@@ -76,13 +79,7 @@ public class ArrayMapperTest extends CrateSingleNodeTest {
         IndicesService instanceFromNode = getInstanceFromNode(IndicesService.class);
         IndexService indexService = instanceFromNode.indexServiceSafe(indexName);
 
-        // TODO: FIX ME! Remove this once plugins are working!
-        IndicesModule indicesModule = new IndicesModule();
-        indicesModule.registerMapper(ArrayMapper.CONTENT_TYPE, new ArrayMapper.TypeParser());
-        MapperRegistry mapperRegistry = indicesModule.getMapperRegistry();
-        DocumentMapperParser parser = new DocumentMapperParser(indexService.indexSettings(), indexService.mapperService(),
-                indexService.analysisService(), indexService.similarityService().similarityLookupService(), null, mapperRegistry);
-
+        DocumentMapperParser parser = indexService.mapperService().documentMapperParser();
         DocumentMapper defaultMapper = parser.parse(mapping);
         XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
         builder.startObject();
