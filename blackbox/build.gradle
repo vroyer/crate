@@ -1,0 +1,16 @@
+
+
+
+
+task hdfsTest (type:Exec, dependsOn: [project(':app').distTar, ':es-repository-hdfs:distZipHadoop2']) {
+    String crateDist = "";
+    String hadoopLibs = "";
+    // crateDist = project(':app').distTar.archivePath
+    // hadoopLibs = project(':es-repository-hdfs').distZipHadoop2.archivePath
+    commandLine "python",
+        "$projectDir/hdfs_tests.py",
+        "--server-tar",
+        crateDist,
+        "--hdfs-zip",
+        hadoopLibs
+}
