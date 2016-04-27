@@ -89,7 +89,7 @@ public class CrateClient {
             builder.put("name", "crate_client");
         }
 
-        CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(builder.getClass().getClassLoader());
+        CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(CrateClient.class.getClassLoader());
 
         // Codecs:
         PostingsFormat.reloadPostingsFormats(clientClassLoader);
