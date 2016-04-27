@@ -25,6 +25,12 @@ import io.crate.action.sql.SQLBulkRequest;
 import io.crate.action.sql.SQLBulkResponse;
 import io.crate.action.sql.SQLRequest;
 import io.crate.action.sql.SQLResponse;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionFuture;
@@ -82,6 +88,17 @@ public class CrateClient {
         if (builder.get("name") == null){
             builder.put("name", "crate_client");
         }
+
+        CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(builder.getClass().getClassLoader());
+
+        // Codecs:
+        PostingsFormat.reloadPostingsFormats(clientClassLoader);
+        DocValuesFormat.reloadDocValuesFormats(clientClassLoader);
+        Codec.reloadCodecs(clientClassLoader);
+        // Analysis:
+        CharFilterFactory.reloadCharFilters(clientClassLoader);
+        TokenFilterFactory.reloadTokenFilters(clientClassLoader);
+        TokenizerFactory.reloadTokenizers(clientClassLoader);
 
         this.settings = builder.build();
 
