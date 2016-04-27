@@ -89,8 +89,9 @@ public class CrateClient {
             builder.put("name", "crate_client");
         }
 
-        CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(CrateClient.class.getClassLoader());
-        Version version = Version.CURRENT;
+        CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(this.settings().getClass().getClassLoader());
+        PostingsFormat.reloadPostingsFormats(clientClassLoader);
+
         this.settings = builder.build();
 
         threadPool = new ThreadPool(this.settings);
