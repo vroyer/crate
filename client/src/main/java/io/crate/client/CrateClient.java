@@ -90,16 +90,7 @@ public class CrateClient {
         }
 
         CrateClientClassLoader clientClassLoader = new CrateClientClassLoader(CrateClient.class.getClassLoader());
-
-        // Codecs:
-        PostingsFormat.reloadPostingsFormats(clientClassLoader);
-        DocValuesFormat.reloadDocValuesFormats(clientClassLoader);
-        Codec.reloadCodecs(clientClassLoader);
-        // Analysis:
-        CharFilterFactory.reloadCharFilters(clientClassLoader);
-        TokenFilterFactory.reloadTokenFilters(clientClassLoader);
-        TokenizerFactory.reloadTokenizers(clientClassLoader);
-
+        Version version = Version.CURRENT;
         this.settings = builder.build();
 
         threadPool = new ThreadPool(this.settings);
